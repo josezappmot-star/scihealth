@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SciHealth — Ciencia que importa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0a0f;
+    --bg2:       #13131a;
+    --bg3:       #1c1c26;
+    --border:    rgba(255,255,255,0.08);
+    --text:      #f0eff8;
+    --muted:     rgba(240,239,248,0.45);
+    --hint:      rgba(240,239,248,0.25);
+    --accent:    #7f77dd;
+    --accent2:   #5dcaa5;
+    --serif:     'Instrument Serif', Georgia, serif;
+    --sans:      'DM Sans', system-ui, sans-serif;
+    --r:         16px;
+    --card-w:    min(420px, 96vw);
+    --card-h:    min(680px, 92vh);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
+  /* ── FONDO ──────────────────────────────────────────────── */
+  .bg-orb {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(127,119,221,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 80%, rgba(93,202,165,0.10) 0%, transparent 60%);
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────── */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .logo { font-family: var(--serif); font-size: 20px; letter-spacing: -0.3px; }
+  .logo span { color: var(--accent2); }
+  .lang-toggle {
+    font-size: 11px; padding: 4px 10px; border-radius: 16px; border: 0.5px solid var(--border);
+    background: var(--bg2); color: var(--muted); cursor: pointer; font-family: var(--sans);
+    transition: all .2s; display: flex; align-items: center; gap: 4px;
+  }
+  .lang-toggle:hover, .lang-toggle.active { border-color: var(--accent); color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .cat-pill {
+    font-size: 12px; padding: 5px 12px; border-radius: 20px;
+    border: 0.5px solid var(--border); background: var(--bg2);
+    color: var(--muted); cursor: pointer; transition: all .2s;
+    white-space: nowrap;
+  }
+  .cat-pill:hover, .cat-pill.active {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .cats-scroll {
+    display: flex; gap: 6px; overflow-x: auto; max-width: 60vw;
+    scrollbar-width: none;
+  }
+  .cats-scroll::-webkit-scrollbar { display: none; }
+  .avatar-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500; color: #fff; font-family: var(--sans);
+    flex-shrink: 0;
+  }
+
+  /* ── STAGE ──────────────────────────────────────────────── */
+  .stage {
+    position: fixed; inset: 56px 0 0 0;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ── CARD STACK ─────────────────────────────────────────── */
+  .card-stack {
+    position: relative;
+    width: var(--card-w);
+    height: var(--card-h);
+  }
+  .card {
+    position: absolute; inset: 0;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 24px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+    transition: transform .4s cubic-bezier(.23,1,.32,1), opacity .4s ease;
+    will-change: transform;
+  }
+  .card:active { cursor: grabbing; }
+  .card.behind  { transform: scale(0.93) translateY(18px); opacity: 0.5; pointer-events: none; }
+  .card.far     { transform: scale(0.87) translateY(34px); opacity: 0.2; pointer-events: none; }
+  .card.leaving-left  { transform: translateX(-110%) rotate(-8deg); opacity: 0; }
+  .card.leaving-right { transform: translateX(110%) rotate(8deg);  opacity: 0; }
+  .card.entering { transform: scale(0.87) translateY(34px); opacity: 0.2; }
+
+  /* ── CARD IMAGEN / HERO ─────────────────────────────────── */
+  .card-hero {
+    height: 200px; flex-shrink: 0;
+    display: flex; align-items: flex-end;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-hero-bg {
+    position: absolute; inset: 0;
+    opacity: 0.18;
+    font-size: 96px; display: flex; align-items: center; justify-content: center;
+  }
+  .card-hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, var(--bg2) 100%);
+  }
+  .cat-badge {
+    position: relative; z-index: 1;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 500; padding: 5px 12px;
+    border-radius: 20px; border: 0.5px solid;
+  }
+  .cat-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* ── CARD BODY ──────────────────────────────────────────── */
+  .card-body { flex: 1; padding: 20px; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 14px; }
+  .card-body::-webkit-scrollbar { display: none; }
+
+  .card-title {
+    font-family: var(--serif); font-size: 22px; line-height: 1.3;
+    letter-spacing: -0.3px; color: var(--text);
+  }
+  .card-title em { font-style: italic; color: var(--accent2); }
+
+  .level-row { display: flex; align-items: center; gap: 8px; }
+  .level-badge {
+    font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 6px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .level-sólido    { background: rgba(93,202,165,0.15); color: #5dcaa5; }
+  .level-moderado  { background: rgba(239,159,39,0.15); color: #ef9f27; }
+  .level-preliminar{ background: rgba(216,90,48,0.15);  color: #d85a30; }
+
+  .source-label { font-size: 11px; color: var(--hint); }
+
+  /* Toggle divulgación / técnico */
+  .mode-toggle {
+    display: flex; background: var(--bg3); border-radius: 10px; padding: 3px;
+    border: 0.5px solid var(--border);
+  }
+  .mode-btn {
+    flex: 1; font-size: 12px; font-family: var(--sans); padding: 6px 10px;
+    border: none; border-radius: 8px; cursor: pointer; transition: all .2s;
+    background: transparent; color: var(--muted);
+  }
+  .mode-btn.active { background: var(--bg); color: var(--text); }
+
+  .card-text { font-size: 14px; line-height: 1.7; color: rgba(240,239,248,0.8); }
+  .card-text-tech { display: none; font-size: 13px; line-height: 1.7; color: rgba(240,239,248,0.7); font-style: italic; }
+
+  .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+  .kw {
+    font-size: 11px; padding: 4px 10px; border-radius: 20px;
+    background: rgba(255,255,255,0.05); border: 0.5px solid var(--border);
+    color: var(--hint);
+  }
+
+  /* ── CARD ACTIONS ───────────────────────────────────────── */
+  .card-actions {
+    padding: 12px 20px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 0.5px solid var(--border); flex-shrink: 0;
+  }
+  .action-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 10px; color: var(--hint); background: none; border: none;
+    cursor: pointer; padding: 6px 10px; border-radius: 10px;
+    font-family: var(--sans); transition: all .2s;
+  }
+  .action-btn:hover { background: rgba(255,255,255,0.06); color: var(--muted); }
+  .action-btn svg { width: 20px; height: 20px; }
+  .action-btn.saved { color: var(--accent); }
+
+  /* ── SWIPE HINT ─────────────────────────────────────────── */
+  .swipe-hint {
+    position: absolute; bottom: -44px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: var(--hint); white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .hint-arrow { font-size: 14px; }
+
+  /* ── INDICADORES LATERALES DE SWIPE ────────────────────── */
+  .swipe-indicator {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; opacity: 0; transition: opacity .2s;
+    pointer-events: none; z-index: 10;
+  }
+  .swipe-indicator.left  { left: -60px; background: rgba(216,90,48,0.25); }
+  .swipe-indicator.right { right: -60px; background: rgba(93,202,165,0.25); }
+
+  /* ── PROGRESO ───────────────────────────────────────────── */
+  .progress-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--border); z-index: 100;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent);
+    transition: width .4s ease;
+  }
+
+  /* ── COUNTER ────────────────────────────────────────────── */
+  .counter {
+    position: fixed; bottom: 16px; right: 20px;
+    font-size: 12px; color: var(--hint); z-index: 100;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── EMPTY STATE ────────────────────────────────────────── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    color: var(--muted); text-align: center; padding: 40px;
+  }
+  .empty-state svg { opacity: 0.3; }
+  .empty-state h2 { font-family: var(--serif); font-size: 22px; }
+  .empty-state p  { font-size: 13px; color: var(--hint); max-width: 260px; line-height: 1.6; }
+
+  /* ── LOADING ────────────────────────────────────────────── */
+  .loading {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    color: var(--muted);
+  }
+  .spinner {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SAVED TOAST ────────────────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--bg3); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 10px 18px;
+    font-size: 13px; color: var(--text);
+    transition: transform .3s ease; z-index: 200;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="bg-orb"></div>
+
+<header>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="logo">Sci<span>Health</span></div>
+    <span style="font-size:11px;color:var(--hint);font-family:var(--sans);">By TesJua</span>
+  </div>
+  <div class="cats-scroll" id="catsScroll"></div>
+  <div class="header-right">
+    <button class="lang-toggle" id="langToggle" onclick="toggleLang()" title="Cambiar idioma">
+      <span id="langLabel">EN</span>
+    </button>
+    <button class="avatar-btn" title="Mi perfil">U</button>
+  </div>
+</header>
+
+<div class="stage">
+  <div class="card-stack" id="stack">
+    <div class="loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+      <div class="spinner"></div>
+      <span style="font-size:13px;color:var(--hint)">Cargando artículos...</span>
+    </div>
+  </div>
+</div>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="counter" id="counter"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIGURACIÓN ─────────────────────────────────────────────
+const SUPABASE_URL = "TU_SUPABASE_URL";
+const SUPABASE_KEY = "TU_SUPABASE_ANON_KEY";
+
+// ── COLORES POR CATEGORÍA ────────────────────────────────────
+const CAT_COLORS = {
+  "Neurociencia":  { bg:"rgba(127,119,221,0.15)", border:"rgba(127,119,221,0.4)", text:"#afa9ec", dot:"#7f77dd" },
+  "Genética":      { bg:"rgba(212,83,126,0.15)",  border:"rgba(212,83,126,0.4)", text:"#ed93b1", dot:"#d4537e" },
+  "Nutrición":     { bg:"rgba(239,159,39,0.15)",  border:"rgba(239,159,39,0.4)", text:"#fac775", dot:"#ef9f27" },
+  "Oncología":     { bg:"rgba(216,90,48,0.15)",   border:"rgba(216,90,48,0.4)",  text:"#f0997b", dot:"#d85a30" },
+  "Microbioma":    { bg:"rgba(93,202,165,0.15)",  border:"rgba(93,202,165,0.4)", text:"#9fe1cb", dot:"#5dcaa5" },
+  "Salud mental":  { bg:"rgba(55,138,221,0.15)",  border:"rgba(55,138,221,0.4)", text:"#85b7eb", dot:"#378add" },
+  "Cardiología":   { bg:"rgba(224,75,74,0.15)",   border:"rgba(224,75,74,0.4)",  text:"#f09595", dot:"#e24b4a" },
+  "Inmunología":   { bg:"rgba(99,153,34,0.15)",   border:"rgba(99,153,34,0.4)",  text:"#c0dd97", dot:"#639922" },
+  "Divulgación":   { bg:"rgba(127,119,221,0.12)", border:"rgba(127,119,221,0.3)",text:"#cecbf6", dot:"#534ab7" },
+  "Salud global":  { bg:"rgba(55,138,221,0.12)",  border:"rgba(55,138,221,0.3)", text:"#b5d4f4", dot:"#185fa5" },
+  "Investigación": { bg:"rgba(93,202,165,0.12)",  border:"rgba(93,202,165,0.3)", text:"#9fe1cb", dot:"#1d9e75" },
+  "Salud pública": { bg:"rgba(239,159,39,0.12)",  border:"rgba(239,159,39,0.3)", text:"#fac775", dot:"#ba7517" },
+  "Inteligencia Artificial": { bg:"rgba(147,51,234,0.15)", border:"rgba(147,51,234,0.4)", text:"#d8b4fe", dot:"#9333ea" },
+  "Tecnología":   { bg:"rgba(6,182,212,0.15)",   border:"rgba(6,182,212,0.4)",  text:"#67e8f9", dot:"#06b6d4" },
+  "Espacio":      { bg:"rgba(249,168,212,0.15)", border:"rgba(249,168,212,0.4)", text:"#fbcfe8", dot:"#f9a8d4" },
+  "Física":        { bg:"rgba(234,179,8,0.15)",   border:"rgba(234,179,8,0.4)",  text:"#fef08a", dot:"#eab308" },
+  "Energía":       { bg:"rgba(34,197,94,0.15)",   border:"rgba(34,197,94,0.4)",  text:"#86efac", dot:"#22c55e" },
+  "Robótica":      { bg:"rgba(239,68,68,0.15)",   border:"rgba(239,68,68,0.4)",  text:"#fca5a5", dot:"#ef4444" },
+  "Ciencia General": { bg:"rgba(255,255,255,0.08)", border:"rgba(255,255,255,0.2)", text:"#aaa", dot:"#888" },
+  "Efemérides":    { bg:"rgba(212,165,116,0.15)", border:"rgba(212,165,116,0.4)", text:"#e8c9a0", dot:"#d4a574" },
+};
+const CAT_EMOJI = {
+  "Neurociencia":"🧠","Genética":"🧬","Nutrición":"🥦","Oncología":"🔬",
+  "Microbioma":"🦠","Salud mental":"💆","Cardiología":"❤️","Inmunología":"🛡️",
+  "Divulgación":"📰","Salud global":"🌍","Investigación":"🔭","Salud pública":"🏥",
+  "Inteligencia Artificial":"🤖","Tecnología":"💻","Espacio":"🚀","Física":"⚛️",
+  "Energía":"⚡",  "Robótica":"🤖","Ciencia General":"🔬",
+  "Efemérides":"📜",
+};
+function catColor(c) { return CAT_COLORS[c] || { bg:"rgba(255,255,255,0.08)", border:"rgba(255,255,255,0.2)", text:"#aaa", dot:"#888" }; }
+
+// ── ESTADO ───────────────────────────────────────────────────
+let articles = [];
+let index = 0;
+let activeCategory = null;
+let saved = new Set(JSON.parse(localStorage.getItem("sci_saved") || "[]"));
+let currentLang = localStorage.getItem("sci_lang") || "es";
+let isDragging = false, startX = 0, startY = 0, currentX = 0;
+
+// ── FETCH ARTÍCULOS ───────────────────────────────────────────
+async function loadArticles(category = null) {
+  let url = `${SUPABASE_URL}/rest/v1/articles?status=eq.approved&order=published_at.desc&limit=50`;
+  if (category) url += `&categoria=eq.${encodeURIComponent(category)}`;
+  try {
+    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch(e) {
+    console.warn("Supabase no configurado, usando datos de demo:", e.message);
+    return getDemoArticles();
+  }
+}
+
+function getDemoArticles() {
+  return [
+    { id:1, titulo_es:"Nueva terapia génica revierte pérdida auditiva en ratones", titulo_en:"New gene therapy reverses hearing loss in mice", resumen_divulgacion:"Investigadores del MIT lograron restaurar el 80% de la audición utilizando vectores AAV dirigidos a las células ciliadas del oído interno. El tratamiento consiste en introducir copias funcionales del gen KCNQ4 directamente en las células dañadas. Los ratones tratados mostraron mejoras notables en su capacidad auditiva en tan solo tres semanas.", resumen_divulgacion_en:"MIT researchers restored 80% of hearing using AAV vectors targeting inner ear hair cells. The treatment introduces functional copies of the KCNQ4 gene directly into damaged cells. Treated mice showed notable improvements in hearing ability in just three weeks.", resumen_tecnico:"El estudio emplea vectores AAV2/1 para transducir células ciliadas externas en ratones Kcnq4-/- knockout. La eficiencia de transducción alcanzó el 73% en células OHC de la vuelta basal.", resumen_tecnico_en:"The study employs AAV2/1 vectors to transduce outer hair cells in Kcnq4-/- knockout mice. Transduction efficiency reached 73% in OHC cells of the basal turn.", categoria:"Genética", palabras_clave:["terapia génica","audición","AAV","KCNQ4"], nivel_evidencia:"moderado", source_name:"Nature Medicine", source_url:"https://pubmed.ncbi.nlm.nih.gov", source_color:"#D4537E", published_at:new Date().toISOString() },
+    { id:2, titulo_es:"El sueño profundo limpia proteínas tóxicas del cerebro tres veces más rápido", titulo_en:"Deep sleep clears toxic brain proteins three times faster", resumen_divulgacion:"Un estudio publicado en Cell demuestra que durante la fase N3 del sueño —el sueño más profundo— el sistema glinfático del cerebro alcanza su máxima eficiencia, eliminando proteínas potencialmente dañinas como el beta-amiloide hasta tres veces más rápido que durante la vigilia.", resumen_divulgacion_en:"A study published in Cell shows that during N3 sleep phase —the deepest sleep— the brain's glympatic system reaches peak efficiency, clearing potentially harmful proteins like beta-amyloid three times faster than during wakefulness.", resumen_tecnico:"Utilizando imagenología con contraste de gadolinio en 2-fotones in vivo, se midió el flujo glinfático en ratones en vigilia, NREM y REM. El flujo LCR durante N3 aumentó 3.2x respecto a vigilia (p<0.001).", resumen_tecnico_en:"Using 2-photon in vivo imaging with gadolinium contrast, glympatic flow was measured in mice during wakefulness, NREM and REM. CSF flow during N3 increased 3.2x vs wakefulness (p<0.001).", categoria:"Neurociencia", palabras_clave:["sueño","sistema glinfático","Alzheimer","beta-amiloide"], nivel_evidencia:"sólido", source_name:"Cell", source_url:"https://pubmed.ncbi.nlm.nih.gov", source_color:"#7F77DD", published_at:new Date(Date.now()-3600000).toISOString() },
+    { id:3, titulo_es:"Bacterias intestinales regulan la respuesta al estrés crónico en humanos", titulo_en:"Gut bacteria regulate chronic stress response in humans", resumen_divulgacion:"Un equipo de investigadores identificó 12 cepas de Lactobacillus que modulan el eje intestino-cerebro, reduciendo los niveles de cortisol en un 34% en participantes con estrés crónico.", resumen_divulgacion_en:"Researchers identified 12 Lactobacillus strains that modulate the gut-brain axis, reducing cortisol levels by 34% in participants with chronic stress.", resumen_tecnico:"RCT doble ciego con 240 participantes. Reducción de cortisol salival: 34.2% (p<0.0001).", resumen_tecnico_en:"Double-blind RCT with 240 participants. Morning salivary cortisol reduction: 34.2% (p<0.0001).", categoria:"Microbioma", palabras_clave:["microbioma","estrés","Lactobacillus","cortisol"], nivel_evidencia:"sólido", source_name:"The Lancet", source_url:"https://pubmed.ncbi.nlm.nih.gov", source_color:"#5DCAA5", published_at:new Date(Date.now()-7200000).toISOString() },
+    { id:4, titulo_es:"Ayuno intermitente 16/8 mejora marcadores de riesgo cardiovascular en adultos mayores", titulo_en:"16/8 Intermittent fasting improves cardiovascular risk markers in older adults", resumen_divulgacion:"Un nuevo ensayo clínico con 380 participantes mayores de 60 años mostró que el ayuno intermitente con ventana de 8 horas redujo la presión arterial sistólica en 9 mmHg.", resumen_divulgacion_en:"A clinical trial with 380 participants over 60 showed that 16/8 intermittent fasting reduced systolic blood pressure by 9 mmHg.", resumen_tecnico:"Ensayo controlado aleatorizado con seguimiento de 6 meses. Reducción PAS: -9.2 mmHg (p<0.001).", resumen_tecnico_en:"Randomized controlled trial with 6-month follow-up. SBP reduction: -9.2 mmHg (p<0.001).", categoria:"Nutrición", palabras_clave:["ayuno intermitente","cardiovascular","presión arterial","metabolismo"], nivel_evidencia:"moderado", source_name:"NEJM", source_url:"https://pubmed.ncbi.nlm.nih.gov", source_color:"#EF9F27", published_at:new Date(Date.now()-10800000).toISOString() },
+    { id:5, titulo_es:"OMS declara nueva fase de vigilancia para variante emergente de influenza aviar", titulo_en:"WHO declares new surveillance phase for emerging avian influenza variant", resumen_divulgacion:"La Organización Mundial de la Salud ha elevado el nivel de monitoreo global tras detectar 14 nuevos casos de influenza aviar H5N2 en tres países.", resumen_divulgacion_en:"The World Health Organization raised global monitoring levels after detecting 14 new avian influenza H5N2 cases in three countries.", resumen_tecnico:"14 casos confirmados H5N2. Receptor binding domain muestra mutaciones en posiciones 182, 226 y 228.", resumen_tecnico_en:"14 confirmed H5N2 cases. Receptor binding domain shows mutations at positions 182, 226 and 228.", categoria:"Salud global", palabras_clave:["influenza aviar","H5N2","pandemia","OMS"], nivel_evidencia:"preliminar", source_name:"WHO", source_url:"https://who.int", source_color:"#378ADD", published_at:new Date(Date.now()-14400000).toISOString() },
+    // Nuevos artículos de ciencia general y tecnología
+    { id:6, titulo_es:"IA logra predecir la estructura de proteínas con precisión casi perfecta", titulo_en:"AI achieves near-perfect protein structure prediction", resumen_divulgacion:"El modelo AlphaFold 3 desarrollado por Google DeepMind ha alcanzado una precisión sin precedentes en la predicción de la estructura de proteínas y su interacción con otras moléculas.", resumen_divulgacion_en:"Google DeepMind's AlphaFold 3 has achieved unprecedented accuracy in predicting protein structures and their interactions with other molecules.", resumen_tecnico:"AlphaFold 3 emplea arquitectura de difusión con attention heads cruzados. En CASP15 alcanza GDT-TS de 92.4 para monómeros.", resumen_tecnico_en:"AlphaFold 3 employs diffusion architecture with cross-attention heads. At CASP15 it reaches GDT-TS of 92.4 for monomers.", categoria:"Inteligencia Artificial", palabras_clave:["AlphaFold","proteínas","DeepMind","medicina"], nivel_evidencia:"sólido", source_name:"Nature", source_url:"https://nature.com", source_color:"#9333EA", published_at:new Date(Date.now()-18000000).toISOString() },
+    { id:7, titulo_es:"Baterías de estado sólido prometen cargar eléctricos en 10 minutos", titulo_en:"Solid-state batteries promise to charge EVs in 10 minutes", resumen_divulgacion:"Científicos de MIT desarrollaron una nueva batería de estado sólido que utiliza un electrolito de vidrio cerámico, permitiendo cargas ultra rápidas sin degradación significativa.", resumen_divulgacion_en:"MIT scientists developed a new solid-state battery using ceramic glass electrolyte, enabling ultra-fast charging without significant degradation.", resumen_tecnico:"Celdas Li-metal con electrolito de Li6PS5Cl. Conductividad iónica de 12 mS/cm a 25°C.", resumen_tecnico_en:"Li-metal cells with Li6PS5Cl electrolyte. Ionic conductivity of 12 mS/cm at 25°C.", categoria:"Energía", palabras_clave:["baterías","estado sólido","vehículos eléctricos","MIT"], nivel_evidencia:"moderado", source_name:"Science", source_url:"https://science.org", source_color:"#22C55E", published_at:new Date(Date.now()-21600000).toISOString() },
+    { id:8, titulo_es:"Telescopio James Webb detecta atmósfera en exoplaneta rocoso similar a la Tierra", titulo_en:"James Webb Telescope detects atmosphere on Earth-like rocky exoplanet", resumen_divulgacion:"El JWST logró identificar una atmósfera rica en dióxido de carbono y nitrógeno en el exoplaneta LHS 1140 b, ubicado a 48 años luz.", resumen_divulgacion_en:"JWST successfully identified a CO2 and nitrogen-rich atmosphere on exoplanet LHS 1140 b, located 48 light-years away.", resumen_tecnico:"Espectroscopía NIRSpec 2.8-5μm revela bandas de CO2 a 4.3μm. Presión superficial estimada: 1.2 bar.", resumen_tecnico_en:"NIRSpec 2.8-5μm spectroscopy reveals CO2 bands at 4.3μm. Estimated surface pressure: 1.2 bar.", categoria:"Espacio", palabras_clave:["JWST","exoplaneta","atmósfera","vida extraterrestre"], nivel_evidencia:"sólido", source_name:"NASA", source_url:"https://nasa.gov", source_color:"#F9A8D4", published_at:new Date(Date.now()-25200000).toISOString() },
+    { id:9, titulo_es:"Robots blandos con piel autocurable inspirada en humanos", titulo_en:"Self-healing soft robots with human-inspired skin", resumen_divulgacion:"Investigadores de Stanford crearon una piel sintética para robots blandos que puede repararse sola tras cortes o raspones, imitando la capacidad de curación de la piel humana.", resumen_divulgacion_en:"Stanford researchers created synthetic skin for soft robots that can self-repair after cuts, mimicking human skin healing ability.", resumen_tecnico:"Elastómero con microcápsulas de 50μm cargadas con prepolímero PDMS. Recuperación del 94% del módulo elástico.", resumen_tecnico_en:"Elastomer with 50μm microcapsules loaded with PDMS prepolymer. 94% elastic modulus recovery after healing.", categoria:"Robótica", palabras_clave:["robots blandos","autocuración","stanford","materiales"], nivel_evidencia:"moderado", source_name:"Science Robotics", source_url:"https://sciencerobotics.org", source_color:"#EF4444", published_at:new Date(Date.now()-28800000).toISOString() },
+    { id:10, titulo_es:"Computación cuántica logra ventaja práctica en simulación de materiales", titulo_en:"Quantum computing achieves practical advantage in materials simulation", resumen_divulgacion:"IBM anunció que su procesador Heron de 133 cúbits ha logrado resolver simulaciones de materiales que tomarían 10 años a las supercomputadoras actuales, en solo 2 horas.", resumen_divulgacion_en:"IBM announced its 133-qubit Heron processor solved materials simulations that would take 10 years on current supercomputers, in just 2 hours.", resumen_tecnico:"Procesador Heron con 133 cúbits. Simulación de modelo de Hubbard muestra error de fase <5% tras 1200 puertas.", resumen_tecnico_en:"Heron processor with 133 qubits. Hubbard model simulation shows <5% phase error after 1200 gates.", categoria:"Física", palabras_clave:["computación cuántica","IBM","materiales","superconductores"], nivel_evidencia:"sólido", source_name:"IBM Research", source_url:"https://ibm.com", source_color:"#EAB308", published_at:new Date(Date.now()-32400000).toISOString() },
+    // Efemérides Históricas
+    { id:11, titulo_es:"12 de mayo de 1820: Nace Florence Nightingale", titulo_en:"May 12, 1820: Florence Nightingale is born", resumen_divulgacion:"Florence Nightingale, pionera de la enfermería moderna, nació en Florencia, Italia. Su trabajo revolucionó la atención médica en los hospitales de guerra y sentó las bases de la estadística sanitaria moderna.", resumen_divulgacion_en:"Florence Nightingale, pioneer of modern nursing, was born in Florence, Italy. Her work revolutionized medical care in war hospitals and laid the foundations of modern health statistics.", resumen_tecnico:"Nightingale introdujo el uso de gráficos circulares (diagramas de área polar) para ilustrar causas estacionales de mortalidad en el ejército británico.", resumen_tecnico_en:"Nightingale introduced the use of circular graphs (polar area diagrams) to illustrate seasonal causes of mortality in the British Army.", categoria:"Efemérides", palabras_clave:["Nightingale","enfermería","estadística","salud"], nivel_evidencia:"sólido", source_name:"National Geographic", source_url:"https://historia.nationalgeographic.com.es/efemerides", source_color:"#D4A574", published_at:new Date(Date.now()-3600000*25).toISOString() },
+    { id:12, titulo_es:"14 de marzo de 1879: Nace Albert Einstein", titulo_en:"March 14, 1879: Albert Einstein is born", resumen_divulgacion:"El físico más influyente del siglo XX nació en Ulm, Alemania. Su teoría de la relatividad cambió nuestra comprensión del espacio, el tiempo y la gravedad, y su ecuación E=mc² se volvió icónica.", resumen_divulgacion_en:"The most influential physicist of the 20th century was born in Ulm, Germany. His theory of relativity changed our understanding of space, time, and gravity, and his E=mc² equation became iconic.", resumen_tecnico:"Einstein desarrolló la teoría de la relatividad especial (1905) y general (1915), prediciendo la curvatura del espacio-tiempo y fenómenos como las ondas gravitacionales.", resumen_tecnico_en:"Einstein developed special relativity (1905) and general relativity (1915), predicting space-time curvature and phenomena like gravitational waves.", categoria:"Efemérides", palabras_clave:["Einstein","relatividad","física","Nobel"], nivel_evidencia:"sólido", source_name:"Hechos Históricos", source_url:"https://www.hechoshistoricos.es/", source_color:"#8B7355", published_at:new Date(Date.now()-3600000*26).toISOString() },
+    { id:13, titulo_es:"20 de julio de 1969: El hombre llega a la Luna", titulo_en:"July 20, 1969: Humans land on the Moon", resumen_divulgacion:"La misión Apollo 11 de la NASA logró el primer alunizaje humano en la historia. Neil Armstrong y Buzz Aldrin caminaron sobre la superficie lunar, cumpliendo el sueño de la humanidad y marcando un hito en la exploración espacial.", resumen_divulgacion_en:"NASA's Apollo 11 mission achieved the first human moon landing in history. Neil Armstrong and Buzz Aldrin walked on the lunar surface, fulfilling humanity's dream and marking a milestone in space exploration.", resumen_tecnico:"El módulo lunar Eagle alunizó en el Mar de la Tranquilidad con 16.7 segundos de combustible restante. Se recolectaron 21.55 kg de muestras lunares.", resumen_tecnico_en:"The Eagle lunar module landed on the Sea of Tranquility with 16.7 seconds of fuel remaining. 21.55 kg of lunar samples were collected.", categoria:"Efemérides", palabras_clave:["Apollo 11","Luna","NASA","exploración espacial"], nivel_evidencia:"sólido", source_name:"National Geographic", source_url:"https://historia.nationalgeographic.com.es/efemerides", source_color:"#D4A574", published_at:new Date(Date.now()-3600000*27).toISOString() },
+    { id:14, titulo_es:"25 de noviembre de 1915: Se presenta la teoría de la relatividad general", titulo_en:"November 25, 1915: General relativity theory presented", resumen_divulgacion:"Albert Einstein presentó oficialmente sus ecuaciones de campo de la relatividad general ante la Academia de Ciencias de Prusia. Esta teoría revolucionaria describió la gravedad no como una fuerza, sino como la curvatura del espacio-tiempo.", resumen_divulgacion_en:"Albert Einstein formally presented his field equations of general relativity to the Prussian Academy of Sciences. This revolutionary theory described gravity not as a force but as the curvature of space-time.", resumen_tecnico:"Las ecuaciones de campo de Einstein: Gμν = 8πTμν, donde Gμν es el tensor de Einstein y Tμν el tensor energía-momento.", resumen_tecnico_en:"Einstein field equations: Gμν = 8πTμν, where Gμν is the Einstein tensor and Tμν the stress-energy tensor.", categoria:"Efemérides", palabras_clave:["relatividad","Einstein","física","espacio-tiempo"], nivel_evidencia:"sólido", source_name:"Hechos Históricos", source_url:"https://www.hechoshistoricos.es/", source_color:"#8B7355", published_at:new Date(Date.now()-3600000*28).toISOString() },
+  ];
+}
+
+// ── RENDER CATEGORÍAS ─────────────────────────────────────────
+function renderCats(cats) {
+  const el = document.getElementById("catsScroll");
+  const all = ["Todas", ...cats];
+  el.innerHTML = all.map(c => `<button class="cat-pill${c==="Todas"&&!activeCategory?" active":c===activeCategory?" active":""}" onclick="filterCat(${c==="Todas"?"null":"'"+c+"'"})">${c}</button>`).join("");
+}
+
+async function filterCat(cat) {
+  activeCategory = cat;
+  index = 0;
+  document.getElementById("stack").innerHTML = `<div class="loading" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;"><div class="spinner"></div><span style="font-size:13px;color:var(--hint)">Filtrando...</span></div>`;
+  articles = await loadArticles(cat);
+  renderCats([...new Set(articles.map(a=>a.categoria).filter(Boolean))]);
+  buildStack();
+}
+
+// ── CONSTRUIR CARDS ───────────────────────────────────────────
+function buildStack() {
+  const stack = document.getElementById("stack");
+  stack.innerHTML = "";
+  if (!articles.length) {
+    stack.innerHTML = `<div class="empty-state"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg><h2>Sin artículos</h2><p>No hay artículos en esta categoría aún. El pipeline actualizará pronto.</p></div>`;
+    return;
+  }
+
+  const total = Math.min(articles.length, index + 3);
+  for (let i = total - 1; i >= index; i--) {
+    const card = createCard(articles[i], i);
+    if      (i === index)     card.classList.add("front");
+    else if (i === index + 1) card.classList.add("behind");
+    else                       card.classList.add("far");
+    stack.appendChild(card);
+  }
+
+  updateCounter();
+  updateProgress();
+  attachSwipe(stack.querySelector(".card.front"));
+
+  const hint = document.createElement("div");
+  hint.className = "swipe-hint";
+  hint.innerHTML = `<span class="hint-arrow">←</span> desliza para navegar <span class="hint-arrow">→</span>`;
+  stack.appendChild(hint);
+}
+
+function createCard(a, i) {
+  const cc = catColor(a.categoria);
+  const emoji = CAT_EMOJI[a.categoria] || "🔬";
+  const isSaved = saved.has(a.id);
+  const isEN = currentLang === "en";
+
+  const title    = isEN && a.titulo_en ? a.titulo_en : (a.titulo_es || a.titulo_original || "Sin título");
+  const divText  = isEN && a.resumen_divulgacion_en ? a.resumen_divulgacion_en : (a.resumen_divulgacion || "Resumen no disponible.");
+  const techText = isEN && a.resumen_tecnico_en ? a.resumen_tecnico_en : (a.resumen_tecnico || "Resumen técnico no disponible.");
+  const divLabel = isEN ? "Popular Science" : "Divulgación";
+  const techLabel= isEN ? "Technical" : "Técnico";
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.dataset.id = a.id;
+
+  card.innerHTML = `
+    <div class="card-hero" style="background:${cc.bg}">
+      <div class="card-hero-bg">${emoji}</div>
+      <div class="card-hero-overlay"></div>
+      <span class="cat-badge" style="background:${cc.bg};border-color:${cc.border};color:${cc.text}">
+        <span class="cat-dot" style="background:${cc.dot}"></span>
+        ${a.categoria || "Ciencia"}
+      </span>
+    </div>
+
+    <div class="card-body">
+      <div class="level-row">
+        <span class="level-badge level-${a.nivel_evidencia || "moderado"}">${a.nivel_evidencia || "moderado"}</span>
+        <span class="source-label">${a.source_name || "Science"} · ${timeAgo(a.published_at)}</span>
+      </div>
+
+      <h2 class="card-title">${title}</h2>
+
+      <div class="mode-toggle">
+        <button class="mode-btn active" onclick="setMode(this,'divul')">${divLabel}</button>
+        <button class="mode-btn"        onclick="setMode(this,'tec')">${techLabel}</button>
+      </div>
+
+      <p class="card-text">${divText}</p>
+      <p class="card-text-tech">${techText}</p>
+
+      ${a.palabras_clave?.length ? `<div class="keywords">${a.palabras_clave.map(k=>`<span class="kw">${k}</span>`).join("")}</div>` : ""}
+    </div>
+
+    <div class="card-actions">
+      <button class="action-btn ${isSaved?"saved":""}" onclick="toggleSave(event,${a.id})" title="Guardar">
+        <svg fill="${isSaved?"currentColor":"none"}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z"/></svg>
+        <span>${isSaved?(isEN?"Saved":"Guardado"):(isEN?"Save":"Guardar")}</span>
+      </button>
+      <button class="action-btn" onclick="openPaper('${a.source_url}')" title="Ver paper">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+        <span>Paper</span>
+      </button>
+      <button class="action-btn" onclick="shareArticle(${a.id})" title="Compartir">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 1 1 0-2.684m0 2.684 6.632 3.316m-6.632-6 6.632-3.316m0 0a3 3 0 1 0 5.367-2.684 3 3 0 0 0-5.367 2.684zm0 9.316a3 3 0 1 0 5.368 2.684 3 3 0 0 0-5.368-2.684z"/></svg>
+        <span>${isEN?"Share":"Compartir"}</span>
+      </button>
+    </div>
+
+    <div class="swipe-indicator left">✕</div>
+    <div class="swipe-indicator right">→</div>
+  `;
+  return card;
+}
+
+// ── SWIPE / DRAG ─────────────────────────────────────────────
+function attachSwipe(card) {
+  if (!card) return;
+
+  const onStart = (x, y) => { isDragging = true; startX = x; startY = y; currentX = 0; card.style.transition = "none"; };
+  const onMove  = (x) => {
+    if (!isDragging) return;
+    currentX = x - startX;
+    const rot = currentX * 0.05;
+    card.style.transform = `translateX(${currentX}px) rotate(${rot}deg)`;
+    const abs = Math.abs(currentX);
+    card.querySelector(".swipe-indicator.left").style.opacity  = currentX < 0 ? Math.min(abs/80, 1) : 0;
+    card.querySelector(".swipe-indicator.right").style.opacity = currentX > 0 ? Math.min(abs/80, 1) : 0;
+  };
+  const onEnd = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    card.style.transition = "";
+    card.querySelector(".swipe-indicator.left").style.opacity = 0;
+    card.querySelector(".swipe-indicator.right").style.opacity = 0;
+    if      (currentX < -80) dismiss("left");
+    else if (currentX >  80) dismiss("right");
+    else { card.style.transform = ""; }
+  };
+
+  card.addEventListener("mousedown",  e => onStart(e.clientX, e.clientY));
+  card.addEventListener("touchstart", e => onStart(e.touches[0].clientX, e.touches[0].clientY), { passive:true });
+  document.addEventListener("mousemove",  e => onMove(e.clientX));
+  document.addEventListener("touchmove",  e => onMove(e.touches[0].clientX), { passive:true });
+  document.addEventListener("mouseup",  onEnd, { once: false });
+  document.addEventListener("touchend", onEnd, { once: false });
+}
+
+function dismiss(dir) {
+  const front = document.querySelector(".card.front");
+  if (!front) return;
+  front.classList.remove("front");
+  front.classList.add(dir === "left" ? "leaving-left" : "leaving-right");
+  index++;
+  setTimeout(() => {
+    front.remove();
+    // Promover siguiente card
+    const behind = document.querySelector(".card.behind");
+    const far    = document.querySelector(".card.far");
+    if (behind) { behind.classList.remove("behind"); behind.classList.add("front"); attachSwipe(behind); }
+    if (far)    { far.classList.remove("far"); far.classList.add("behind"); }
+    // Cargar nueva card si quedan artículos
+    if (articles[index + 2]) {
+      const nc = createCard(articles[index + 2], index + 2);
+      nc.classList.add("far");
+      document.getElementById("stack").insertBefore(nc, document.getElementById("stack").firstChild);
+    }
+    if (index >= articles.length) showEmpty();
+    updateCounter();
+    updateProgress();
+  }, 380);
+}
+
+function showEmpty() {
+  const stack = document.getElementById("stack");
+  stack.innerHTML = `<div class="empty-state"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 0 0 1.946-.806 3.42 3.42 0 0 1 4.438 0 3.42 3.42 0 0 1 3.138 3.138 3.42 3.42 0 0 0 .806 1.946 3.42 3.42 0 0 1 0 4.438 3.42 3.42 0 0 0-.806 1.946 3.42 3.42 0 0 1-3.138 3.138 3.42 3.42 0 0 0-1.946.806 3.42 3.42 0 0 1-4.438 0 3.42 3.42 0 0 0-1.946-.806 3.42 3.42 0 0 1-3.138-3.138 3.42 3.42 0 0 0-.806-1.946 3.42 3.42 0 0 1 0-4.438 3.42 3.42 0 0 0 .806-1.946 3.42 3.42 0 0 1 3.138-3.138z"/></svg><h2>¡Al día!</h2><p>Leíste todos los artículos disponibles. El pipeline añadirá nuevos en las próximas horas.</p><button style="margin-top:8px;background:var(--accent);color:#fff;border:none;padding:10px 24px;border-radius:12px;cursor:pointer;font-family:var(--sans);font-size:13px;" onclick="location.reload()">Recargar</button></div>`;
+}
+
+// ── ACCIONES ─────────────────────────────────────────────────
+function setMode(btn, mode) {
+  const card = btn.closest(".card");
+  card.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  card.querySelector(".card-text").style.display      = mode === "divul" ? "" : "none";
+  card.querySelector(".card-text-tech").style.display = mode === "tec"   ? "" : "none";
+}
+
+function toggleSave(e, id) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  if (saved.has(id)) { saved.delete(id); btn.classList.remove("saved"); btn.querySelector("span").textContent = "Guardar"; showToast("Artículo eliminado"); }
+  else               { saved.add(id);    btn.classList.add("saved");    btn.querySelector("span").textContent = "Guardado"; showToast("✓ Guardado en tu biblioteca"); }
+  localStorage.setItem("sci_saved", JSON.stringify([...saved]));
+}
+
+function openPaper(url) { window.open(url, "_blank"); }
+function shareArticle(id) {
+  if (navigator.share) navigator.share({ title: "SciHealth", url: window.location.href + "?id=" + id });
+  else { navigator.clipboard?.writeText(window.location.href + "?id=" + id); showToast("Link copiado"); }
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function timeAgo(iso) {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(diff / 3600000);
+  if (h < 1) return "hace unos min";
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h / 24);
+  return `hace ${d}d`;
+}
+
+function updateCounter() {
+  const el = document.getElementById("counter");
+  if (articles.length) el.textContent = `${Math.min(index + 1, articles.length)} / ${articles.length}`;
+}
+
+function updateProgress() {
+  const fill = document.getElementById("progressFill");
+  const pct = articles.length ? Math.min((index / articles.length) * 100, 100) : 0;
+  fill.style.width = pct + "%";
+}
+
+// ── IDIOMA ───────────────────────────────────────────────────
+function toggleLang() {
+  currentLang = currentLang === "es" ? "en" : "es";
+  localStorage.setItem("sci_lang", currentLang);
+  document.getElementById("langLabel").textContent = currentLang === "en" ? "ES" : "EN";
+  buildStack();
+}
+
+// ── TECLADO ──────────────────────────────────────────────────
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft")  dismiss("left");
+  if (e.key === "ArrowRight") dismiss("right");
+});
+
+// ── INICIO ───────────────────────────────────────────────────
+(async () => {
+  document.getElementById("langLabel").textContent = currentLang === "en" ? "ES" : "EN";
+  articles = await loadArticles();
+  const cats = [...new Set(articles.map(a => a.categoria).filter(Boolean))];
+  renderCats(cats);
+  buildStack();
+})();
+</script>
+</body>
+</html>

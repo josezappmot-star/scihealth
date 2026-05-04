@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SciHealth Admin — By TesJua</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:     #0d0d0d; --bg2: #161616; --bg3: #1f1f1f;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --text:   #e8e8e8; --muted: rgba(232,232,232,0.5); --hint: rgba(232,232,232,0.25);
+    --green:  #4ade80; --red: #f87171; --amber: #fbbf24; --blue: #60a5fa;
+    --sans:   'DM Sans', system-ui, sans-serif;
+    --mono:   'DM Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+
+  /* ── LOGIN ──────────────────────────────────────────────── */
+  #loginScreen {
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+  }
+  .login-card {
+    background:var(--bg2); border:0.5px solid var(--border2);
+    border-radius:16px; padding:40px; width:340px; text-align:center;
+  }
+  .login-logo { font-size:28px; font-weight:300; letter-spacing:-0.5px; margin-bottom:6px; display:flex; align-items:center; gap:8px; justify-content:center; }
+  .login-logo b { font-weight:500; }
+  .login-sub  { font-size:12px; color:var(--muted); margin-bottom:32px; }
+  .login-card input {
+    width:100%; background:var(--bg3); border:0.5px solid var(--border2); border-radius:8px;
+    padding:10px 14px; font-size:14px; color:var(--text); font-family:var(--sans);
+    margin-bottom:10px; outline:none;
+  }
+  .login-card input:focus { border-color:var(--blue); }
+  .login-btn {
+    width:100%; background:var(--blue); color:#000; border:none;
+    border-radius:8px; padding:11px; font-size:14px; font-weight:500;
+    cursor:pointer; font-family:var(--sans); transition:opacity .2s; margin-top:4px;
+  }
+  .login-btn:hover { opacity:0.85; }
+  .login-err { font-size:12px; color:var(--red); margin-top:8px; min-height:16px; }
+
+  /* ── LAYOUT ─────────────────────────────────────────────── */
+  #adminApp { display:none; }
+
+  .topbar {
+    position:sticky; top:0; z-index:50;
+    background:rgba(13,13,13,0.92); backdrop-filter:blur(10px);
+    border-bottom:0.5px solid var(--border);
+    height:52px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 24px; gap:16px;
+  }
+  .topbar-left { display:flex; align-items:center; gap:16px; }
+  .topbar-logo { font-size:16px; font-weight:500; letter-spacing:-0.3px; display:flex; align-items:center; gap:8px; }
+  .topbar-logo span { color:var(--blue); }
+  .topbar-badge { font-size:10px; background:rgba(96,165,250,0.15); color:var(--blue); padding:3px 8px; border-radius:20px; }
+  .topbar-right { display:flex; align-items:center; gap:10px; }
+  .logout-btn {
+    font-size:12px; color:var(--muted); background:none; border:0.5px solid var(--border);
+    border-radius:6px; padding:5px 12px; cursor:pointer; font-family:var(--sans); transition:all .2s;
+  }
+  .logout-btn:hover { border-color:var(--border2); color:var(--text); }
+
+  .main { display:flex; min-height:calc(100vh - 52px); }
+
+  /* ── SIDEBAR ────────────────────────────────────────────── */
+  .sidebar {
+    width:200px; flex-shrink:0; border-right:0.5px solid var(--border);
+    padding:20px 12px; display:flex; flex-direction:column; gap:4px;
+    position:sticky; top:52px; height:calc(100vh - 52px);
+  }
+  .sidebar-section { font-size:10px; color:var(--hint); text-transform:uppercase; letter-spacing:.08em; padding:8px 10px 4px; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:8px 10px;
+    border-radius:8px; cursor:pointer; font-size:13px; color:var(--muted);
+    transition:all .2s; border:none; background:none; width:100%; text-align:left; font-family:var(--sans);
+  }
+  .nav-item:hover { background:var(--bg3); color:var(--text); }
+  .nav-item.active { background:var(--bg3); color:var(--text); }
+  .nav-icon { width:16px; height:16px; flex-shrink:0; }
+  .nav-badge {
+    margin-left:auto; font-size:10px; background:rgba(251,191,36,0.2);
+    color:var(--amber); padding:1px 6px; border-radius:20px;
+  }
+  .nav-badge.red { background:rgba(248,113,113,0.15); color:var(--red); }
+
+  /* ── CONTENT ────────────────────────────────────────────── */
+  .content { flex:1; padding:24px 28px; overflow-y:auto; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .page-title { font-size:18px; font-weight:500; margin-bottom:20px; }
+
+  /* ── STATS ──────────────────────────────────────────────── */
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px; }
+  .stat-card {
+    background:var(--bg2); border:0.5px solid var(--border); border-radius:12px; padding:16px;
+  }
+  .stat-label { font-size:11px; color:var(--muted); margin-bottom:8px; }
+  .stat-value { font-size:26px; font-weight:500; line-height:1; }
+  .stat-value.green  { color:var(--green); }
+  .stat-value.amber  { color:var(--amber); }
+  .stat-value.red    { color:var(--red); }
+  .stat-value.blue   { color:var(--blue); }
+  .stat-sub { font-size:11px; color:var(--hint); margin-top:4px; }
+
+  /* ── FILTERS BAR ─────────────────────────────────────────── */
+  .filters {
+    display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap;
+  }
+  .filter-btn {
+    font-size:12px; padding:6px 14px; border-radius:20px; cursor:pointer;
+    border:0.5px solid var(--border); background:var(--bg2); color:var(--muted);
+    font-family:var(--sans); transition:all .2s;
+  }
+  .filter-btn:hover,.filter-btn.active { border-color:var(--blue); color:var(--blue); background:rgba(96,165,250,0.1); }
+  .search-input {
+    flex:1; min-width:200px; background:var(--bg2); border:0.5px solid var(--border);
+    border-radius:8px; padding:7px 14px; font-size:13px; color:var(--text);
+    font-family:var(--sans); outline:none;
+  }
+  .search-input:focus { border-color:var(--blue); }
+
+  /* ── ARTICLES TABLE ──────────────────────────────────────── */
+  .articles-list { display:flex; flex-direction:column; gap:8px; }
+  .article-row {
+    background:var(--bg2); border:0.5px solid var(--border); border-radius:12px;
+    padding:16px; transition:border-color .2s;
+  }
+  .article-row:hover { border-color:var(--border2); }
+  .article-top { display:flex; align-items:flex-start; gap:12px; margin-bottom:10px; }
+  .article-cat {
+    font-size:10px; font-weight:500; padding:3px 9px; border-radius:20px;
+    flex-shrink:0; margin-top:2px;
+  }
+  .article-title { font-size:14px; font-weight:500; line-height:1.4; flex:1; }
+  .article-meta { font-size:11px; color:var(--hint); display:flex; gap:12px; flex-wrap:wrap; }
+  .article-preview { font-size:12px; color:var(--muted); line-height:1.6; margin:8px 0; display:none; }
+  .article-row.expanded .article-preview { display:block; }
+  .article-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+
+  .btn {
+    font-size:12px; padding:6px 14px; border-radius:8px; cursor:pointer;
+    border:0.5px solid; font-family:var(--sans); transition:all .15s; font-weight:500;
+  }
+  .btn-approve { background:rgba(74,222,128,0.1); color:var(--green); border-color:rgba(74,222,128,0.3); }
+  .btn-approve:hover { background:rgba(74,222,128,0.2); }
+  .btn-reject  { background:rgba(248,113,113,0.1); color:var(--red);   border-color:rgba(248,113,113,0.3); }
+  .btn-reject:hover  { background:rgba(248,113,113,0.2); }
+  .btn-expand  { background:transparent; color:var(--muted); border-color:var(--border); }
+  .btn-expand:hover  { color:var(--text); border-color:var(--border2); }
+  .btn-link    { background:transparent; color:var(--blue); border-color:rgba(96,165,250,0.3); }
+  .btn-link:hover    { background:rgba(96,165,250,0.1); }
+
+  .status-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+  .status-pending  { background:var(--amber); }
+  .status-approved { background:var(--green); }
+  .status-rejected { background:var(--red); }
+
+  /* ── PIPELINE PAGE ───────────────────────────────────────── */
+  .pipeline-card {
+    background:var(--bg2); border:0.5px solid var(--border); border-radius:12px; padding:20px; margin-bottom:12px;
+  }
+  .pipeline-card h3 { font-size:14px; font-weight:500; margin-bottom:4px; }
+  .pipeline-card p  { font-size:12px; color:var(--muted); line-height:1.6; }
+  .run-btn {
+    margin-top:14px; background:var(--blue); color:#000; border:none;
+    border-radius:8px; padding:9px 20px; font-size:13px; font-weight:500;
+    cursor:pointer; font-family:var(--sans); transition:opacity .2s;
+  }
+  .run-btn:hover { opacity:0.85; }
+  .log-box {
+    background:var(--bg); border:0.5px solid var(--border); border-radius:8px;
+    padding:14px; font-family:var(--mono); font-size:11px; color:var(--muted);
+    min-height:120px; max-height:280px; overflow-y:auto; margin-top:12px;
+    line-height:1.7; white-space:pre-wrap;
+  }
+
+  /* ── EMPTY ───────────────────────────────────────────────── */
+  .empty { text-align:center; padding:48px 24px; color:var(--hint); font-size:13px; }
+
+  /* ── LOADING SKELETON ────────────────────────────────────── */
+  @keyframes shimmer { 0%{opacity:.4} 50%{opacity:.7} 100%{opacity:.4} }
+  .skeleton { background:var(--bg3); border-radius:6px; animation:shimmer 1.4s ease infinite; }
+
+  /* ── TOAST ───────────────────────────────────────────────── */
+  .toast {
+    position:fixed; bottom:24px; right:24px;
+    background:var(--bg3); border:0.5px solid var(--border2); border-radius:10px;
+    padding:10px 18px; font-size:13px; z-index:999;
+    transform:translateY(80px); transition:transform .3s ease; opacity:0;
+  }
+  .toast.show { transform:translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ──────────────────────────────────────────────── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      Sci<b>Health</b>
+      <span style="font-size:11px;color:var(--hint);font-family:var(--sans);">By TesJua</span>
+    </div>
+    <div class="login-sub">Panel de administración</div>
+    <input type="email"    id="loginEmail" placeholder="Email admin" autocomplete="email">
+    <input type="password" id="loginPass"  placeholder="Contraseña" autocomplete="current-password">
+    <button class="login-btn" onclick="doLogin()">Iniciar sesión</button>
+    <div class="login-err" id="loginErr"></div>
+    <div style="font-size:11px;color:var(--hint);margin-top:16px;">Demo: admin@scihealth.com / admin123</div>
+  </div>
+</div>
+
+<!-- ── APP ────────────────────────────────────────────────── -->
+<div id="adminApp">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        Sci<span>Health</span>
+        <span style="font-size:11px;color:var(--hint);font-family:var(--sans);">By TesJua</span>
+        <span class="topbar-badge">ADMIN</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span style="font-size:12px;color:var(--muted)" id="adminEmail"></span>
+      <button class="logout-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <nav class="sidebar">
+      <div class="sidebar-section">Principal</div>
+      <button class="nav-item active" onclick="showPage('dashboard',this)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11l2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('pending',this)" id="navPending">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+        Pendientes
+        <span class="nav-badge" id="pendingBadge">0</span>
+      </button>
+      <button class="nav-item" onclick="showPage('all',this)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+        Todos
+      </button>
+      <div class="sidebar-section" style="margin-top:12px">Sistema</div>
+      <button class="nav-item" onclick="showPage('pipeline',this)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15"/></svg>
+        Pipeline
+      </button>
+      <button class="nav-item" onclick="showPage('sources',this)">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 0 0-5.656 0l-4 4a4 4 0 1 0 5.656 5.656l1.102-1.101m-.758-4.899a4 4 0 0 0 5.656 0l4-4a4 4 0 0 0-5.656-5.656l-1.1 1.1"/></svg>
+        Fuentes
+      </button>
+    </nav>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-title">Dashboard — By TesJua</div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card"><div class="stat-label">Total artículos</div><div class="stat-value blue" id="statTotal">—</div></div>
+          <div class="stat-card"><div class="stat-label">Pendientes</div><div class="stat-value amber" id="statPending">—</div></div>
+          <div class="stat-card"><div class="stat-label">Aprobados</div><div class="stat-value green" id="statApproved">—</div></div>
+          <div class="stat-card"><div class="stat-label">Rechazados</div><div class="stat-value red" id="statRejected">—</div></div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Últimos artículos ingresados</div>
+        <div class="articles-list" id="recentList"></div>
+      </div>
+
+      <!-- PENDIENTES -->
+      <div class="page" id="page-pending">
+        <div class="page-title">Artículos pendientes de revisión</div>
+        <div class="filters">
+          <input class="search-input" type="text" placeholder="Buscar en pendientes..." oninput="filterList('pending',this.value)" id="searchPending">
+        </div>
+        <div class="articles-list" id="pendingList"></div>
+      </div>
+
+      <!-- TODOS -->
+      <div class="page" id="page-all">
+        <div class="page-title">Todos los artículos</div>
+        <div class="filters" id="allFilters">
+          <button class="filter-btn active" onclick="filterStatus('all',this)">Todos</button>
+          <button class="filter-btn" onclick="filterStatus('approved',this)">Aprobados</button>
+          <button class="filter-btn" onclick="filterStatus('pending',this)">Pendientes</button>
+          <button class="filter-btn" onclick="filterStatus('rejected',this)">Rechazados</button>
+          <input class="search-input" type="text" placeholder="Buscar..." oninput="filterList('all',this.value)" id="searchAll">
+        </div>
+        <div class="articles-list" id="allList"></div>
+      </div>
+
+      <!-- PIPELINE -->
+      <div class="page" id="page-pipeline">
+        <div class="page-title">Pipeline de ingesta — By TesJua</div>
+        <div class="pipeline-card">
+          <h3>Estado del sistema</h3>
+          <p>El pipeline corre automáticamente cada 6 horas en Railway/Render. También puedes dispararlo manualmente desde aquí. Ingesta artículos de salud, tecnología, espacio, IA y ciencia general.</p>
+          <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap;">
+            <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;font-size:12px;">
+              <div style="color:var(--hint);margin-bottom:2px">Última ejecución</div>
+              <div id="lastRun" style="color:var(--text)">—</div>
+            </div>
+            <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;font-size:12px;">
+              <div style="color:var(--hint);margin-bottom:2px">Artículos hoy</div>
+              <div id="articlesToday" style="color:var(--green)">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-card">
+          <h3>Ejecutar pipeline manualmente</h3>
+          <p>Llama al endpoint del pipeline en Railway/Render. Configura la URL de tu worker abajo.</p>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <input id="pipelineUrl" type="url" placeholder="https://tu-worker.railway.app/run" style="flex:1;background:var(--bg3);border:0.5px solid var(--border2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);font-family:var(--sans);outline:none;">
+            <button class="run-btn" onclick="triggerPipeline()" id="runBtn">▶ Ejecutar</button>
+          </div>
+          <div class="log-box" id="logBox">Pipeline listo. Presiona Ejecutar para ingestar nuevos artículos de ciencia y tecnología...</div>
+        </div>
+      </div>
+
+      <!-- FUENTES -->
+      <div class="page" id="page-sources">
+        <div class="page-title">Fuentes configuradas — By TesJua</div>
+        <div id="sourcesList"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+const SUPABASE_URL = "TU_SUPABASE_URL";
+const SUPABASE_KEY = "TU_SUPABASE_SERVICE_ROLE_KEY"; // service_role para admin
+
+const DEMO_USER = { email:"admin@scihealth.com", password:"admin123" };
+let currentUser = null;
+let allArticles = [], currentFilter = "all", currentSearch = "";
+
+const CAT_COLORS = {
+  "Neurociencia":"rgba(127,119,221,0.2)","Genética":"rgba(212,83,126,0.2)","Nutrición":"rgba(239,159,39,0.2)",
+  "Microbioma":"rgba(93,202,165,0.2)","Salud mental":"rgba(55,138,221,0.2)","Oncología":"rgba(216,90,48,0.2)",
+  "Inteligencia Artificial":"rgba(147,51,234,0.2)","Tecnología":"rgba(6,182,212,0.2)","Espacio":"rgba(249,168,212,0.2)",
+  "Física":"rgba(234,179,8,0.2)","Energía":"rgba(34,197,94,0.2)","Robótica":"rgba(239,68,68,0.2)","Ciencia General":"rgba(255,255,255,0.08)",
+};
+function catBg(c) { return CAT_COLORS[c] || "rgba(255,255,255,0.08)"; }
+function statusDot(s) { return `<span class="status-dot status-${s}" title="${s}"></span>`; }
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(diff/3600000);
+  if (h<1) return "hace unos min";
+  if (h<24) return `hace ${h}h`;
+  return `hace ${Math.floor(h/24)}d`;
+}
+
+// Fuentes de salud + ciencia/tecnología
+const SOURCES_CONFIG = [
+  // Salud
+  { name:"PubMed — Salud general",  url:"https://pubmed.ncbi.nlm.nih.gov/rss/search/?term=health+science", active:true },
+  { name:"PubMed — Neurociencia",   url:"https://pubmed.ncbi.nlm.nih.gov/rss/search/?term=neuroscience+brain", active:true },
+  { name:"PubMed — Nutrición",      url:"https://pubmed.ncbi.nlm.nih.gov/rss/search/?term=nutrition+diet", active:true },
+  { name:"PubMed — Genética",       url:"https://pubmed.ncbi.nlm.nih.gov/rss/search/?term=genetics+genomics", active:true },
+  { name:"WHO — Noticias",          url:"https://www.who.int/rss-feeds/news-english.xml", active:true },
+  { name:"NIH — Divulgación",       url:"https://www.nih.gov/news-events/feed.xml", active:true },
+  // Ciencia y tecnología
+  { name:"NASA — Espacio",          url:"https://www.nasa.gov/rss/dyn/breaking_news.rss", active:true },
+  { name:"MIT Tech Review — IA",    url:"https://www.technologyreview.com/feed/", active:true },
+  { name:"Ars Technica — Tech",     url:"https://feeds.arstechnica.com/arstechnica/index", active:true },
+  { name:"Nature — Física",         url:"https://www.nature.com/nphys.rss", active:true },
+  { name:"Science — General",       url:"https://www.science.org/rss/news_current.xml", active:true },
+  { name:"Wired — Innovación",      url:"https://www.wired.com/feed/rss", active:true },
+];
+
+// ── AUTH ──────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const pass  = document.getElementById("loginPass").value;
+  const errEl = document.getElementById("loginErr");
+
+  // Demo login
+  if (email === DEMO_USER.email && pass === DEMO_USER.password) {
+    currentUser = { email };
+    showApp();
+    return;
+  }
+
+  // Supabase auth (cuando esté configurado)
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method:"POST", headers:{ "Content-Type":"application/json", apikey:SUPABASE_KEY },
+      body: JSON.stringify({ email, password:pass }),
+    });
+    const d = await r.json();
+    if (d.access_token) { currentUser = { email, token:d.access_token }; showApp(); }
+    else errEl.textContent = "Credenciales incorrectas";
+  } catch(e) { errEl.textContent = "Error de conexión. Usando modo demo."; }
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById("adminApp").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+}
+
+function showApp() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("adminApp").style.display = "block";
+  document.getElementById("adminEmail").textContent = currentUser.email;
+  loadData();
+}
+
+// ── DATA ──────────────────────────────────────────────────────
+async function fetchArticles() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/articles?order=created_at.desc&limit=200`, {
+      headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}` }
+    });
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch(e) {
+    console.warn("Usando datos demo:", e.message);
+    return getDemoData();
+  }
+}
+
+function getDemoData() {
+  return [
+    // Originales salud
+    { id:1, titulo_es:"Nueva terapia génica revierte pérdida auditiva", titulo_original:"Gene therapy reverses hearing loss in mice", resumen_divulgacion:"Investigadores del MIT lograron restaurar el 80% de la audición usando vectores AAV.", resumen_tecnico:"AAV2/1 vectors targeting OHC via cochlear injection. ABR thresholds improved 45dB at 3mo.", categoria:"Genética", nivel_evidencia:"moderado", source_name:"Nature Medicine", source_url:"https://pubmed.ncbi.nlm.nih.gov", source_color:"#D4537E", status:"pending", created_at:new Date().toISOString(), published_at:new Date().toISOString() },
+    { id:2, titulo_es:"Sueño profundo limpia proteínas tóxicas 3x más rápido", titulo_original:"Deep sleep clears toxic proteins from brain", resumen_divulgacion:"El sistema glinfático es 3x más activo durante la fase N3 del sueño.", resumen_tecnico:"2-photon imaging with gadolinium contrast. LCR flow 3.2x higher during N3 (p<0.001).", categoria:"Neurociencia", nivel_evidencia:"sólido", source_name:"Cell", source_url:"https://pubmed.ncbi.nlm.nih.gov", source_color:"#7F77DD", status:"approved", created_at:new Date(Date.now()-3600000).toISOString(), published_at:new Date(Date.now()-3600000).toISOString() },
+    // Nuevos ciencia/tecnología
+    { id:3, titulo_es:"IA predice estructura de proteínas con precisión perfecta", titulo_original:"AI predicts protein structures with near-perfect accuracy", resumen_divulgacion:"AlphaFold 3 revoluciona el diseño de medicamentos y estudio de enfermedades complejas.", resumen_tecnico:"AlphaFold 3 uses diffusion architecture with cross-attention heads. CASP15 GDT-TS 92.4.", categoria:"Inteligencia Artificial", nivel_evidencia:"sólido", source_name:"Nature", source_url:"https://nature.com", source_color:"#9333EA", status:"approved", created_at:new Date(Date.now()-7200000).toISOString(), published_at:new Date(Date.now()-7200000).toISOString() },
+    { id:4, titulo_es:"Baterías de estado sólido cargan eléctricos en 10 min", titulo_original:"Solid-state batteries charge EVs in 10 minutes", resumen_divulgacion:"Nuevo electrolito de vidrio cerámico permite cargas ultra rápidas sin degradación.", resumen_tecnico:"Li-metal cells with Li6PS5Cl electrolyte. 82% capacity after 10k cycles.", categoria:"Energía", nivel_evidencia:"moderado", source_name:"Science", source_url:"https://science.org", source_color:"#22C55E", status:"pending", created_at:new Date(Date.now()-10800000).toISOString(), published_at:new Date(Date.now()-10800000).toISOString() },
+    { id:5, titulo_es:"JWST detecta atmósfera en exoplaneta rocoso", titulo_original:"JWST detects atmosphere on rocky exoplanet", resumen_divulgacion:"Primer indicio claro de atmósfera sostenida en planeta rocoso fuera del sistema solar.", resumen_tecnico:"NIRSpec 2.8-5μm shows CO2 and N2 bands. Surface pressure 1.2 bar.", categoria:"Espacio", nivel_evidencia:"sólido", source_name:"NASA", source_url:"https://nasa.gov", source_color:"#F9A8D4", status:"approved", created_at:new Date(Date.now()-14400000).toISOString(), published_at:new Date(Date.now()-14400000).toISOString() },
+    // Rechazado irrelevante
+    { id:6, titulo_es:"Artículo irrelevante sobre finanzas", titulo_original:"Stock market trends 2025", resumen_divulgacion:"Tendencias de mercado.", resumen_tecnico:"N/A", categoria:"Otro", nivel_evidencia:"preliminar", source_name:"Reuters", source_url:"https://reuters.com", source_color:"#888", status:"rejected", created_at:new Date(Date.now()-18000000).toISOString(), published_at:new Date(Date.now()-18000000).toISOString() },
+  ];
+}
+
+async function loadData() {
+  allArticles = await fetchArticles();
+  const pending  = allArticles.filter(a=>a.status==="pending").length;
+  const approved = allArticles.filter(a=>a.status==="approved").length;
+  const rejected = allArticles.filter(a=>a.status==="rejected").length;
+
+  document.getElementById("statTotal").textContent    = allArticles.length;
+  document.getElementById("statPending").textContent  = pending;
+  document.getElementById("statApproved").textContent = approved;
+  document.getElementById("statRejected").textContent = rejected;
+  document.getElementById("pendingBadge").textContent = pending;
+
+  const today = allArticles.filter(a => new Date(a.created_at).toDateString() === new Date().toDateString()).length;
+  document.getElementById("articlesToday").textContent = today;
+  document.getElementById("lastRun").textContent = allArticles.length ? timeAgo(allArticles[0].created_at) : "Nunca";
+
+  renderList("recentList",  allArticles.slice(0,5));
+  renderList("pendingList", allArticles.filter(a=>a.status==="pending"));
+  renderList("allList",     allArticles);
+  renderSources();
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderList(containerId, articles) {
+  const el = document.getElementById(containerId);
+  if (!articles.length) { el.innerHTML = `<div class="empty">Sin artículos en esta sección</div>`; return; }
+  el.innerHTML = articles.map(a => `
+    <div class="article-row" id="row-${a.id}">
+      <div class="article-top">
+        ${statusDot(a.status)}
+        <span class="article-cat" style="background:${catBg(a.categoria)};color:var(--text)">${a.categoria||"—"}</span>
+        <span class="article-title">${a.titulo_es||a.titulo_original||"Sin título"}</span>
+      </div>
+      <div class="article-meta">
+        <span>${a.source_name||"—"}</span>
+        <span>${timeAgo(a.created_at)}</span>
+        <span style="color:${a.nivel_evidencia==='sólido'?'var(--green)':a.nivel_evidencia==='moderado'?'var(--amber)':'var(--red)'}">${a.nivel_evidencia||"—"}</span>
+        <span style="color:${a.status==='approved'?'var(--green)':a.status==='rejected'?'var(--red)':'var(--amber)'}">${a.status}</span>
+      </div>
+      <div class="article-preview">
+        <b>Divulgación (ES):</b> ${a.resumen_divulgacion||"—"}<br>
+        <b>Popular Science (EN):</b> ${a.resumen_divulgacion_en||"—"}<br><br>
+        <b>Técnico (ES):</b> ${a.resumen_tecnico||"—"}<br>
+        <b>Technical (EN):</b> ${a.resumen_tecnico_en||"—"}<br>
+        <b>Idioma original:</b> ${a.idioma_original||"en"}
+      </div>
+      <div class="article-actions">
+        ${a.status!=="approved" ? `<button class="btn btn-approve" onclick="updateStatus(${a.id},'approved')">✓ Aprobar</button>` : ""}
+        ${a.status!=="rejected" ? `<button class="btn btn-reject"  onclick="updateStatus(${a.id},'rejected')">✕ Rechazar</button>` : ""}
+        <button class="btn btn-expand" onclick="toggleExpand(${a.id})">Ver resumen</button>
+        <button class="btn btn-link"   onclick="window.open('${a.source_url}','_blank')">Paper ↗</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function toggleExpand(id) {
+  document.getElementById(`row-${id}`)?.classList.toggle("expanded");
+}
+
+async function updateStatus(id, status) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/articles?id=eq.${id}`, {
+      method:"PATCH", headers:{ "Content-Type":"application/json", apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ status, updated_at: new Date().toISOString() }),
+    });
+  } catch(e) { /* demo mode */ }
+
+  const a = allArticles.find(x=>x.id===id);
+  if (a) a.status = status;
+  showToast(status === "approved" ? "✓ Artículo aprobado" : "✕ Artículo rechazado");
+  await loadData();
+}
+
+// ── FILTROS ───────────────────────────────────────────────────
+function filterStatus(status, btn) {
+  currentFilter = status;
+  document.querySelectorAll("#allFilters .filter-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  applyFilters();
+}
+function filterList(page, query) {
+  currentSearch = query.toLowerCase();
+  applyFilters(page);
+}
+function applyFilters(page="all") {
+  let list = allArticles;
+  if (page==="all" && currentFilter !== "all") list = list.filter(a=>a.status===currentFilter);
+  if (currentSearch) list = list.filter(a=>
+    (a.titulo_es||"").toLowerCase().includes(currentSearch) ||
+    (a.categoria||"").toLowerCase().includes(currentSearch) ||
+    (a.source_name||"").toLowerCase().includes(currentSearch)
+  );
+  renderList(page==="pending"?"pendingList":"allList", page==="pending"?list.filter(a=>a.status==="pending"):list);
+}
+
+// ── PIPELINE ──────────────────────────────────────────────────
+async function triggerPipeline() {
+  const url = document.getElementById("pipelineUrl").value.trim();
+  const log = document.getElementById("logBox");
+  const btn = document.getElementById("runBtn");
+  if (!url) { log.textContent += "\n⚠ Configura la URL del pipeline primero."; return; }
+  btn.textContent = "⏳ Ejecutando..."; btn.disabled = true;
+  log.textContent += `\n[${new Date().toLocaleTimeString()}] Disparando pipeline → ${url}`;
+  try {
+    const r = await fetch(url, { method:"POST" });
+    log.textContent += `\n[OK] Respuesta: ${r.status}`;
+    showToast("Pipeline ejecutado — By TesJua");
+  } catch(e) { log.textContent += `\n[ERROR] ${e.message}`; }
+  btn.textContent = "▶ Ejecutar"; btn.disabled = false;
+  log.scrollTop = log.scrollHeight;
+}
+
+// ── FUENTES ───────────────────────────────────────────────────
+function renderSources() {
+  document.getElementById("sourcesList").innerHTML = SOURCES_CONFIG.map(s=>`
+    <div class="pipeline-card" style="display:flex;align-items:center;gap:16px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:${s.active?"var(--green)":"var(--red)"};flex-shrink:0"></div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;margin-bottom:2px">${s.name}</div>
+        <div style="font-size:11px;color:var(--hint);font-family:var(--mono)">${s.url}</div>
+      </div>
+      <span style="font-size:11px;color:${s.active?"var(--green)":"var(--red)"}">${s.active?"Activa":"Inactiva"}</span>
+    </div>
+  `).join("");
+}
+
+// ── NAV ───────────────────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+  document.getElementById(`page-${id}`).classList.add("active");
+  btn.classList.add("active");
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2400);
+}
+
+// ── ENTER KEY LOGIN ───────────────────────────────────────────
+document.getElementById("loginPass").addEventListener("keydown", e => { if (e.key==="Enter") doLogin(); });
+</script>
+</body>
+</html>
