@@ -34,6 +34,9 @@ const SCIENCE_TECH_SOURCES = [
   { name:"Energy Gov — Energía",         url:"https://www.energy.gov/news/press-releases/rss.xml", category:"Energía", color:"#22C55E" },
   { name:"Robotics Trends",              url:"https://www.roboticstrends.com/rss.xml", category:"Robótica", color:"#EF4444" },
   { name:"Wired — Innovación",          url:"https://www.wired.com/feed/rss", category:"Tecnología", color:"#06B6D4" },
+  // Nuevas fuentes solicitadas (RSS)
+  { name:"The Conversation España", url:"https://theconversation.com/es/rss", category:"Divulgación", color:"#E3173B" },
+  { name:"Agencia SINC",           url:"https://www.agenciascinc.es/rss",     category:"Ciencia General", color:"#0077B5" },
 ];
 
 // Fuentes web para efemérides (scraping directo)
@@ -75,60 +78,65 @@ async function fetchWithTimeout(url) {
   catch(e) { clearTimeout(t); throw e; }
 }
 
-// ── SCRAPING DE EFEMÉRIDES ──────────────────────────────
-async function scrapeEphemeris(url) {
+// ── SCRAPING DE WEB (EFEMÉRIDES Y FUENTES DIRECTAS) ─────────
+async function scrapeWebContent(url, category) {
   try {
     const html = await fetchWithTimeout(url);
     const clean = (s) => s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g," ").replace(/&[a-z]+;/g,"").replace(/\s+/g," ").trim();
     const items = [];
-    const today = new Date();
-    const day = today.getDate();
-    const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-    const month = monthNames[today.getMonth()];
-    const datePattern = new RegExp(`\\b${day}\\s*de\\s*${month}\\b[^<]{20,200}`, "i");
 
-    // Extrae todas las fechas del día de hoy
-    let match;
-    const tempHtml = html.replace(/<[^>]+>/g," ").replace(/\s+/g," ");
-    if (datePattern.test(tempHtml)) {
-      tempHtml.match(datePattern).forEach((ev) => {
-        const title = clean(ev).slice(0,120);
-        if (title.length > 30 && /\d{3,4}/.test(title)) {
+    // Busca encabezados (h1, h2, h3) con contenido sustancioso
+    const titleRegex = /<h[1-3][^>]*>([^<]{20,120})<\/h[1-3]>/gi;
+    let m;
+    while ((m = titleRegex.exec(html)) !== null && items.length < 10) {
+      const title = clean(m[1]);
+      if (title.length > 30 && !title.match(/menu|nav|footer|header|inicio|home/i)) {
+        items.push({
+          title: title,
+          description: `Noticia de ${category}: ${title}`,
+          link: url,
+          pubDate: new Date().toISOString()
+        });
+      }
+    }
+
+    // Fallback: busca enlaces con títulos significativos (ignora imágenes)
+    if (!items.length) {
+      const linkRegex = /<a[^>]*href="([^"]+)"[^>]*>([^<]{30,100}<\/a>/gi;
+      while ((m = linkRegex.exec(html)) !== null && items.length < 10) {
+        const title = clean(m[2]);
+        const href = m[1];
+        // Ignora enlaces a imágenes o archivos binarios
+        if (title.length > 30 && href.startsWith("http") && !href.match(/\.(png|jpg|jpeg|gif|svg|pdf|zip)$/i)) {
           items.push({
-            title: `Hoy ${day} de ${month}: ${title}`,
-            description: `Efeméride del ${day} de ${month}: ${title}`,
-            link: url,
-            pubDate: today.toISOString()
+            title: title,
+            description: `Artículo: ${title}`,
+            link: href,
+            pubDate: new Date().toISOString()
           });
         }
-      });
+      }
     }
-
-    // Fallback: busca eventos con patrones de fecha
-    if (!items.length) {
-      const eventRegex = /(\d{1,2}\s+de\s+\w+\s*[:\-]\s*)([A-ZÁ-Ú][^\n<]{30,})/gi;
-      let m;
-      while ((m = eventRegex.exec(html)) !== null && items.length < 5) {
-        const title = clean(m[2]);
-        if (title.length > 30) {
-          items.push({ title, description: `Efeméride histórica: ${title}`, link: url, pubDate: new Date().toISOString() });
-        }
       }
     }
 
-    // Fallback 2: busca párrafos con años históricos
+    // Fallback 2: busca párrafos con contenido sustancioso
     if (!items.length) {
-      const pRegex = /<p[^>]*>([^<]{50,300})<\/p>/gi;
-      let m;
-      while ((m = pRegex.exec(html)) !== null && items.length < 5) {
+      const pRegex = /<p[^>]*>([^<]{60,300})<\/p>/gi;
+      while ((m = pRegex.exec(html)) !== null && items.length < 8) {
         const text = clean(m[1]);
-        if (/\b(1[5-9]\d{2}|20\d{2})\b/.test(text) && text.length > 50) {
-          items.push({ title: text.slice(0,80), description: text, link: url, pubDate: new Date().toISOString() });
+        if (text.length > 60) {
+          items.push({
+            title: text.slice(0,80),
+            description: text,
+            link: url,
+            pubDate: new Date().toISOString()
+          });
         }
       }
     }
 
-    console.log(`  ${items.length} efemérides extraídas de ${url}`);
+    console.log(`  ${items.length} artículos extraídos de ${url}`);
     return items.slice(0, 8);
   } catch(e) { console.warn(`  ⚠ Scraping fallido ${url}: ${e.message}`); return []; }
 }
@@ -193,7 +201,7 @@ async function runPipeline() {
     let items = [];
     try {
       if (src.type === "web") {
-        items = await scrapeEphemeris(src.url);
+        items = await scrapeWebContent(src.url, src.category);
       } else {
         const xml = await fetchWithTimeout(src.url);
         items = parseRSS(xml);
