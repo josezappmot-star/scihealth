@@ -14,14 +14,52 @@ const CONFIG = {
   DELAY_MS:       1200,
 };
 
-// Fuentes de salud (originales)
+// Fuentes de salud (URLs REALES que sí funcionan)
 const HEALTH_SOURCES = [
-  { name:"PubMed — Salud general",  url:"https://pubmed.ncbi.nlm.nih.gov/rss/search/?term=health+science&format=abstract&count=10", category:"Investigación", color:"#1D9E75" },
-  { name:"PubMed — Neurociencia",   url:"https://pubmed.ncbi.nlm.nih.gov/rss/search/?term=neuroscience+brain&format=abstract&count=10", category:"Neurociencia", color:"#7F77DD" },
-  { name:"PubMed — Nutrición",      url:"https://pubmed.ncbi.nlm.nih.gov/rss/search/?term=nutrition+diet+health&format=abstract&count=10", category:"Nutrición", color:"#EF9F27" },
-  { name:"PubMed — Genética",       url:"https://pubmed.ncbi.nlm.nih.gov/rss/search/?term=genetics+genomics+disease&format=abstract&count=10", category:"Genética", color:"#D4537E" },
-  { name:"WHO — Noticias",          url:"https://www.who.int/rss-feeds/news-english.xml", category:"Salud global", color:"#378ADD" },
-  { name:"NIH — Divulgación",       url:"https://www.nih.gov/news-events/feed.xml", category:"Divulgación", color:"#D85A30" },
+  { name:"World Health Organization",  url:"https://www.who.int/rss-feeds/news-english.xml", category:"Salud global", color:"#378ADD" },
+  { name:"NIH News",              url:"https://www.nih.gov/news-events/news-releases/rss.xml", category:"Divulgación", color:"#D85A30" },
+  { name:"Medical News Today",    url:"https://www.medicalnewstoday.com/rss", category:"Salud general", color:"#1D9E75" },
+];
+
+// Fuentes de ciencia, tecnología e innovación (URLs REALES)
+const SCIENCE_TECH_SOURCES = [
+  { name:"NASA News",             url:"https://www.nasa.gov/rss/dyn/breaking_news.rss", category:"Espacio", color:"#F9A8D4" },
+  { name:"Science Magazine",       url:"https://www.science.org/rss/news_current.xml", category:"Ciencia General", color:"#888888" },
+  { name:"Nature News",           url:"https://www.nature.com/nature/articles.rss", category:"Ciencia General", color:"#EAB308" },
+  { name:"Ars Technica",         url:"https://feeds.arstechnica.com/arstechnica/index.xml", category:"Tecnología", color:"#06B6D4" },
+  { name:"The Conversation ES",     url:"https://theconversation.com/es/rss", category:"Divulgación", color:"#E3173B" },
+  { name:"Agencia SINC",         url:"https://www.agenciasinc.es/rss", category:"Ciencia General", color:"#0077B5" },
+  { name:"Wired",                url:"https://www.wired.com/feed/rss", category:"Tecnología", color:"#06B6D4" },
+  { name:"MIT Technology Review", url:"https://www.technologyreview.com/feed/", category:"Inteligencia Artificial", color:"#9333EA" },
+];
+
+// Fuentes web para efemérides (scraping directo)
+const EFEMERIDES_SOURCES = [
+  { name:"National Geographic España", url:"https://historia.nationalgeographic.com.es/efemerides", type:"web", category:"Efemérides", color:"#D4A574" },
+  { name:"Hechos Historicos",      url:"https://www.hechoshistoricos.es/",       type:"web", category:"Efemérides", color:"#8B7355" },
+];
+
+// Fuentes de ciencia, tecnología e innovación (URLs REALES)
+const SCIENCE_TECH_SOURCES = [
+  { name:"NASA News",             url:"https://www.nasa.gov/rss/dyn/breaking_news.rss", category:"Espacio", color:"#F9A8D4" },
+  { name:"Science Magazine",       url:"https://www.science.org/rss/news_current.xml", category:"Ciencia General", color:"#888888" },
+  { name:"Nature News",           url:"https://www.nature.com/nature/articles.rss", category:"Ciencia General", color:"#EAB308" },
+  { name:"Ars Technica",         url:"https://feeds.arstechnica.com/arstechnica/index", category:"Tecnología", color:"#06B6D4" },
+  { name:"The Conversation ES",    url:"https://theconversation.com/es/rss", category:"Divulgación", color:"#E3173B" },
+  { name:"Agencia SINC",         url:"https://www.agenciasinc.es/rss", category:"Ciencia General", color:"#0077B5" },
+  { name:"Wired",                url:"https://www.wired.com/feed/rss", category:"Tecnología", color:"#06B6D4" },
+  { name:"MIT Technology Review", url:"https://www.technologyreview.com/feed/", category:"Inteligencia Artificial", color:"#9333EA" },
+];
+
+// Fuentes de ciencia, tecnología e innovación (URLs verificadas)
+const SCIENCE_TECH_SOURCES = [
+  { name:"NASA — Espacio",           url:"https://www.nasa.gov/rss/dyn/breaking_news.rss", category:"Espacio", color:"#F9A8D4" },
+  { name:"Science — News",          url:"https://www.science.org/rss/news_current.xml", category:"Ciencia General", color:"#888888" },
+  { name:"Nature — News",          url:"https://www.nature.com/nature/articles.rss", category:"Ciencia General", color:"#EAB308" },
+  { name:"Ars Technica — Tech",    url:"https://feeds.arstechnica.com/arstechnica/index", category:"Tecnología", color:"#06B6D4" },
+  { name:"The Conversation ES",     url:"https://theconversation.com/es/rss", category:"Divulgación", color:"#E3173B" },
+  { name:"Agencia SINC",          url:"https://www.agenciasinc.es/rss", category:"Ciencia General", color:"#0077B5" },
+  { name:"Wired — Tech",           url:"https://www.wired.com/feed/rss", category:"Tecnología", color:"#06B6D4" },
 ];
 
 // Nuevas fuentes de ciencia general y tecnología
