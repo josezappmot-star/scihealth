@@ -78,7 +78,61 @@ async function fetchWithTimeout(url) {
   catch(e) { clearTimeout(t); throw e; }
 }
 
-// ── SCRAPING DE WEB (EFEMÉRIDES Y FUENTES DIRECTAS) ─────────
+// ── SCRAPING DE EFEMÉRIDES (SOLO DÍA ACTUAL) ─────────
+async function scrapeEphemeris(url) {
+  try {
+    const html = await fetchWithTimeout(url);
+    const clean = (s) => s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g," ").replace(/&[a-z]+;/g,"").replace(/\s+/g," ").trim();
+    const today = new Date();
+    const day = today.getDate();
+    const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    const month = monthNames[today.getMonth()];
+    const items = [];
+
+    // Busca: "3 de mayo: texto" o "3 de mayo — texto" (solo día actual)
+    const todayPattern = new RegExp(`\\b${day}\\s+de\\s+${month}\\b[^<]{20,300}`, "i");
+    const tempHtml = html.replace(/<[^>]+>/g," ").replace(/\s+/g," ");
+    
+    if (todayPattern.test(tempHtml)) {
+      const matches = tempHtml.match(new RegExp(`\\b${day}\\s+de\\s+${month}\\b[^.]{20,300}`, "gi"));
+      if (matches) {
+        matches.forEach((ev) => {
+          const title = clean(ev).slice(0,150);
+          if (title.length > 30 && /\d{3,4}/.test(title)) {
+            items.push({
+              title: `Hoy ${day} de ${month}: ${title}`,
+              description: `Efeméride histórica del ${day} de ${month}: ${title}`,
+              link: url,
+              pubDate: today.toISOString()
+            });
+          }
+        });
+      }
+    }
+
+    // Fallback: busca patrones "día de mes" + texto
+    if (!items.length) {
+      const eventRegex = new RegExp(`(${day}\\s+de\\s+${month}[^<]{20,200})`, "gi");
+      let m;
+      while ((m = eventRegex.exec(html)) !== null && items.length < 5) {
+        const title = clean(m[1]);
+        if (title.length > 30) {
+          items.push({
+            title: `Hoy ${day} de ${month}: ${title}`,
+            description: `Efeméride del ${day} de ${month}: ${title}`,
+            link: url,
+            pubDate: today.toISOString()
+          });
+        }
+      }
+    }
+
+    console.log(`  ${items.length} efemérides extraídas para hoy (${day} de ${month}) de ${url}`);
+    return items.slice(0, 5);
+  } catch(e) { console.warn(`  ⚠ Scraping fallido ${url}: ${e.message}`); return []; }
+}
+
+// ── SCRAPING DE NOTICIAS WEB (The Conversation, SINC - SIN filtro de fecha) ─────────
 async function scrapeWebContent(url, category) {
   try {
     const html = await fetchWithTimeout(url);
@@ -98,6 +152,71 @@ async function scrapeWebContent(url, category) {
           pubDate: new Date().toISOString()
         });
       }
+    }
+
+    // Fallback: busca enlaces con títulos significativos (ignora imágenes)
+    if (!items.length) {
+      const linkRegex = /<a[^>]*href="([^"]+)"[^>]*>([^<]{30,100})<\/a>/gi;
+      while ((m = linkRegex.exec(html)) !== null && items.length < 10) {
+        const title = clean(m[2]);
+        const href = m[1];
+        if (title.length > 30 && href.startsWith("http") && !href.match(/\.(png|jpg|jpeg|gif|svg|pdf|zip)$/i)) {
+          items.push({
+            title: title,
+            description: `Artículo: ${title}`,
+            link: href,
+            pubDate: new Date().toISOString()
+          });
+        }
+      }
+    }
+
+    console.log(`  ${items.length} artículos extraídos de ${url}`);
+    return items.slice(0, 8);
+  } catch(e) { console.warn(`  ⚠ Scraping fallido ${url}: ${e.message}`); return []; }
+}
+        });
+      }
+    }
+
+    // Fallback: busca coincidencias exactas tipo "3 de mayo" + texto
+    if (!items.length) {
+      const eventRegex = new RegExp(`(${day}\\s+de\\s+${month}[^<]{20,200})`, "gi");
+      let m;
+      while ((m = eventRegex.exec(html)) !== null && items.length < 5) {
+        const title = clean(m[1]);
+        if (title.length > 30) {
+          items.push({
+            title: `Hoy ${day} de ${month}: ${title}`,
+            description: `Efeméride del ${day} de ${month}: ${title}`,
+            link: url,
+            pubDate: today.toISOString()
+          });
+        }
+      }
+    }
+
+    // Fallback 2: busca elementos <li> con la fecha de hoy
+    if (!items.length) {
+      const liRegex = new RegExp(`<li[^>]*>.*?${day}\\s+de\\s+${month}.*?<\\/li>`, "gi");
+      let m;
+      while ((m = liRegex.exec(html)) !== null && items.length < 5) {
+        const text = clean(m[0]);
+        if (text.length > 30) {
+          items.push({
+            title: `Hoy ${day} de ${month}: ${text.slice(0,100)}`,
+            description: text,
+            link: url,
+            pubDate: today.toISOString()
+          });
+        }
+      }
+    }
+
+    console.log(`  ${items.length} efemérides extraídas para hoy (${day} de ${month}) de ${url}`);
+    return items.slice(0, 5);
+  } catch(e) { console.warn(`  ⚠ Scraping fallido ${url}: ${e.message}`); return []; }
+}
     }
 
     // Fallback: busca enlaces con títulos significativos (ignora imágenes)
